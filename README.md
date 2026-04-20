@@ -1,83 +1,183 @@
-# SDN Link Failure Detection and Recovery
+# SDN Link Failure Detection and Recovery using Ryu & Mininet
 
 ## 👤 Student Details
-- Name: Pavan Kumar H K  
-- SRN: PES1UG24CS319  
+
+**Name:** Pavan Kumar H K
+**SRN:** PES1UG24CS319
 
 ---
 
-## 🎯 Objective
-The objective of this project is to detect link failures in a network and automatically reroute traffic using Software Defined Networking (SDN), ensuring continuous communication without interruption.
+## 📌 Project Objective
+
+This project demonstrates how Software Defined Networking (SDN) can dynamically handle network changes such as link failures. Using a Ryu controller and Mininet, the system detects link failures, updates flow rules, and restores connectivity automatically.
 
 ---
 
-## 🧠 Concept
-In traditional networks, when a link fails, communication stops.  
-In SDN, a central controller manages the network and can dynamically adapt to failures.
+## 🛠️ Tools & Technologies
 
-This project uses:
-- **Ryu Controller** → Controls the network  
-- **Mininet** → Simulates the network  
-- **OpenFlow Protocol** → Communication between controller and switches  
-
-The controller monitors the network, detects failures, updates flow rules, and reroutes traffic.
+* Mininet (Network Emulator)
+* Ryu Controller (SDN Controller)
+* OpenFlow 1.3 Protocol
+* Python
 
 ---
 
-## 🏗️ Topology
+## 🌐 Network Topology
 
+A linear topology with 3 switches and 3 hosts:
 
-h1 --- s1 ---- s2 ---- s3 --- h2
-___________ s3 ___________/
+```
+h1 ─ s1 ─ s2 ─ s3 ─ h3
+        │
+        h2
+```
 
-
-- **Main Path:** s1 → s2 → s3  
-- **Alternate Path:** s1 → s3  
-
-The alternate path allows communication even if the main path fails.
-
----
-
-## ⚙️ Working
-
-1. When the network starts, the controller learns MAC addresses of hosts  
-2. It installs flow rules in switches for efficient packet forwarding  
-3. Packets are forwarded through the shortest path  
-
-### 🔴 During Link Failure
-- A link failure is simulated using:
-
-link s1 s2 down
-
-- The controller detects this using **PortStatus event**
-- Old flow rules are cleared
-- New flow rules are installed using the alternate path
-
-### 🟢 After Recovery
-- Packets are rerouted automatically  
-- Communication continues with minimal packet loss  
+* h1 connected to s1
+* h2 connected to s2
+* h3 connected to s3
 
 ---
 
-## 🔍 Features
-- Link failure detection  
-- Dynamic flow rule update  
-- Automatic rerouting  
-- Continuous communication  
-- Efficient packet forwarding  
+## ⚙️ Features Implemented
+
+* Learning Switch using Ryu
+* Flow rule installation (match-action)
+* Link failure detection
+* Dynamic flow update
+* Network recovery after link restoration
+* Flow table inspection using ovs-ofctl
 
 ---
 
-## 🧪 How to Run
+## ▶️ Execution Steps
 
-### 1. Start Controller
-pkill -f ryu-manager
+### 1. Clean Environment
+
+```
 sudo mn -c
+pkill -f ryu-manager
+```
+
+### 2. Start Controller
+
+```
+cd ~/sdn-link-failure-final
 source ~/ryu38-env/bin/activate
-ryu-manager ryu.app.simple_switch_13 --ofp-tcp-listen-port 6653
-sudo mn --topo linear,3 --controller=remote,ip=127.0.0.1,port=6653
+ryu-manager link_failure_fixed.py
+```
+
+### 3. Start Mininet
+
+```
+sudo mn --topo linear,3 --controller=remote
+```
+
+---
+
+## 🧪 Testing & Demonstration
+
+### ✅ Normal Operation
+
+```
 pingall
+```
+
+**Result:** 0% packet loss
+
+---
+
+### 🔍 Flow Table Check
+
+```
+sh ovs-ofctl dump-flows s2
+```
+
+Shows match-action flow rules installed by controller.
+
+---
+
+### 🔴 Link Failure Simulation
+
+```
+link s2 s3 down
+pingall
+```
+
+**Result:** Partial packet loss (~66%)
+
+* h1 ↔ h2 works
+* h3 becomes unreachable
+
+---
+
+### 🟢 Link Restoration
+
+```
+link s2 s3 up
+pingall
+```
+
+**Result:** 0% packet loss (network restored)
+
+---
+
+## 📊 Observations
+
+* Flow rules are dynamically installed by the controller.
+* During link failure, existing flows may remain but become invalid.
+* After restoration, new flows are installed or reused.
+* Packet counters in flow tables confirm active forwarding.
+
+---
+
+## 🧠 Key Concepts
+
+* SDN separates control plane and data plane
+* Controller manages network behavior centrally
+* Flow rules follow match-action paradigm
+* Table-miss rule sends unknown packets to controller
+
+---
+
+## 🎯 Conclusion
+
+This project successfully demonstrates how SDN enables dynamic network management. The controller detects link failures, adapts flow rules, and restores connectivity efficiently, showcasing the flexibility and power of SDN.
+
+---
+
+## 📷 (Optional)
+
+Add screenshots of:
+
+* Flow tables
+* Ping results
+* Link failure logs
+
+---
+
+## 📎 References
+
+* Ryu Documentation
+* Mininet Documentation
+* OpenFlow Specification
+sudo mn -c
+pkill -f ryu-manager
+cd ~/sdn-link-failure-final
+source ~/ryu38-env/bin/activate
+ryu-manager link_failure_fixed.py
+sudo mn --topo linear,3 --controller=remote
+pingall
+sh ovs-ofctl dump-flows s1
+sh ovs-ofctl dump-flows s2
+sh ovs-ofctl dump-flows s3
+h1 ping h2
 h1 ping h3
 link s2 s3 down
-
-
+pingall
+h1 ping h2
+h1 ping h3
+sh ovs-ofctl dump-flows s2
+link s2 s3 up
+pingall
+sh ovs-ofctl dump-flows s2
+exit
