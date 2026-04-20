@@ -71,14 +71,13 @@ link s1 s2 down
 ## 🧪 How to Run
 
 ### 1. Start Controller
-```bash
-cd ~/sdn-link-failure-final
-source ~/ryu/ryu-env/bin/activate
-ryu-manager controller.py
-2. Start Mininet
-cd ~/sdn-link-failure-final
-sudo mn --custom topo.py --topo mytopo --controller remote
-3. Test Connectivity
-h1 ping h2
-4. Simulate Link Failure
-link s1 s2 down
+pkill -f ryu-manager
+sudo mn -c
+source ~/ryu38-env/bin/activate
+ryu-manager ryu.app.simple_switch_13 --ofp-tcp-listen-port 6653
+sudo mn --topo linear,3 --controller=remote,ip=127.0.0.1,port=6653
+pingall
+h1 ping h3
+link s2 s3 down
+
+
